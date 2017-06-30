@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Arc Diagram</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.0.0/d3.min.js"></script>
+  <script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
+  <!--<script type="text/javascript" src="iris.json">-->
+
+  <!--</script>-->
+  <style>
+    #canvas {
+      stroke: black;
+      stroke-width: 1px;
+      stroke-opacity: 0.7;
+      /*fill-opacity: 0.7;*/
+    }
+
+    path {
+      fill : transparent;
+      stroke : gray;  
+    }
+  </style>
+
+  <script>
+    /*
+    Global variables
+    */
+    var outerWidth = 700,
+      outerHeight = 2000,
+      margin = { "left": 50, "right": 50, "top": 50, "bottom": 50 },
+      innerWidth = outerWidth - margin.left - margin.right,
+      innerHeight = outerHeight - margin.top - margin.bottom,
+      xPad = (margin.left + margin.right) / 2,
+      yPad = (margin.top + margin.bottom) / 2,
+      ySep = 15,
+      nodeShape = "circle",
+      nodeRad = 5;
+
+    /*
+     Draw graph nodes
+     */
+    function drawNodes(nodes) {
+      // node coloring scale based on the category elements of nodes array of objects
+      var nodeColor = d3.scaleOrdinal(d3.schemeCategory20)
+        .domain(d3.extent(nodes, (d) => d.group));
+
+      // console.log(nodes);
+      var g = d3.select("#diagram-g-elem")
+        .append("g")
+        .attr("id", "nodes-g-elem");
+
+      g.selectAll(nodeShape)
+        .data(nodes)
+        .enter()
+        .append(nodeShape)
+        .attrs({
+          "cx": (d) => d.x,
+          "cy": (d) => d.y,
+          "r": (d) => d.r,
+          "fill": (d) => nodeColor(d.group)
+        });
+    }
+
+    /* 
+    Draw graph links
+    */
+    function drawLinks(links) {
+      console.log(links);
+
+      var g = d3.select("#diagram-g-elem")
+        .append("g")
+        .attr("id", "arcs-g-elem");
+
+      g.selectAll("path")
+        .data(links)
+        .enter()
+        .append("path")
+        .attr("d", arc);
+
+    }
+    /* 
+    Helper function 
+    */
+    function arc(d) {
+      //Creating an Arc path
+      // M start-x, start-y A radius-x, radius-y, x-axis-rotation, large-arc-flag, sweep-flag, end-x, end-y
+      var spacing = 7;
+      var link = "M" + (d.source.x+spacing) + "," + d.source.y + "A" + ((d.source.y - d.target.y) / 2) + "," + ((d.source.y - d.target.y) / 2) + " 0 0,0 " + (d.target.x+spacing) +"," + d.target.y ;
+      // console.log(i);
+      // var link = d3.arc()
+      //   .innerRadius((d.source.y - d.target.y) / 2)
+      //   .outerRadius((d.source.y - d.target.y) / 2)
+      //   .startAngle(Math.PI)
+      //   .endAngle(3 * Math.PI / 2);
+      /*      var arcGen = d3.arc();
+            var link = arcGen(
+              {
+                "x": d.source.x + 5,
+                "y": d.source.y,
+                "radius": (d.source.y - d.target.y) / 2,
+                "startAngle": (Math.PI),
+                "endAngle": (3 * Math.PI / 2)
+              });
+            return link;*/
+      return link;
+    };
+
+    /* 
+    Main draw function
+    */
+    function draw(data) {
+      var nodeX = 20;
+      var nodeY = d3.scaleLinear()
+        .domain([0, data.nodes.length - 1])
+        .range([nodeRad, data.nodes.length * ySep - nodeRad]);
+
+      data.nodes.forEach(function (d, i) {
+        d.x = nodeX;
+        d.y = nodeY(i);
+        d.r = nodeRad;
+      });
+
+      data.links.forEach(function (d) {
+        d.source = data.nodes[d.source];
+        d.target = data.nodes[d.target];
+      });
+
+      var svg = d3.select("#canvas")
+        .append("svg")
+        .attr("width", outerWidth)
+        .attr("height", outerHeight);
+
+      var g = svg.append("g")
+        .attr("width", innerWidth)
+        .attr("height", innerHeight)
+        .attr("id", "diagram-g-elem")
+        .attr("transform", "translate(" + xPad + ", " + yPad + ")");
+
+      drawNodes(data.nodes);
+
+      drawLinks(data.links);
+
+    }
+  </script>
+</head>
+
+<body>
+  <div id="canvas"> </div>
+
+
+  <script>
+    d3.json("miserables.json", draw)
+  </Script>
+
+</body>
+
+</html>
