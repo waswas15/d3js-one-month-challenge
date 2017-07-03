@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>d3.js with leaflet.js</title>
+
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.9.1/d3.js"></script>
+
+    <script src="http://cdn.leafletjs.com/leaflet-0.7/leaflet.js">
+
+    </script>
+</head>
+
+<body>
+
+    <div id="map" style="width: 600px; height: 400px"></div>
+
+    <script type="text/javascript">
+        var map = L.map('map').setView([40.925408, -97.230520], 3);
+        mapLink =
+            '<a href="http://openstreetmap.org">OpenStreetMap</a>';
+        L.tileLayer(
+            'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; ' + mapLink + ' Contributors',
+                maxZoom: 18,
+            }).addTo(map);
+
+        /* Initialize the SVG layer */
+        map._initPathRoot()
+
+        /* We simply pick up the SVG from the map object */
+        var svg = d3.select("#map").select("svg"),
+            g = svg.append("g");
+
+        d3.csv("data.csv", function (data) {
+            /* Add a LatLng object to each item in the dataset */
+            data.forEach(function (d) {
+                d.LatLng = new L.LatLng(d.lat,
+                    d.lon)
+            })
+
+            var colorScale = d3.scaleSequential(d3.interpolateWarm)
+                .domain(d3.extent(data, function (d) { return d.temp; }));
+
+            var heightScale = d3.scaleLinear()
+                .domain(d3.extent(data, function (d) { return d.temp; }))
+                .range([1, 5]);
+
+            var feature = g.selectAll("rect")
+                .data(data)
+                .enter()
+                .append("rect")
+                .attr("stroke", "black")
+                .attr("opacity", .6)
+                .attr("fill", (d) => colorScale(d.temp))
+                .attr("width", 5)
+                .attr("height", (d) => heightScale(d.temp))
+                .on("mouseover", showTooltip)
+                .on("mouseout", hideTooltip);
+
+
+            function showTooltip(d) {
+                var popup = L.popup({ closeBotton: false })
+                    .setLatLng(d.LatLng)
+                    .setContent("<p> Temperature : " + d.temp + "</p>");
+
+                map.openPopup(popup)
+            }
+
+            function hideTooltip(d) {
+                map.closePopup();
+            }
+
+            map.on("viewreset", update);
+            update();
+
+            function update() {
+                feature.attr("transform",
+                    function (d) {
+                        return "translate(" +
+                            map.latLngToLayerPoint(d.LatLng).x + "," +
+                            map.latLngToLayerPoint(d.LatLng).y + ")";
+                    }
+                )
+            }
+        })
+    </script>
+</body>
+
+</html>
